@@ -1,0 +1,18 @@
+[project]
+name = "railroute-backend"
+version = "0.1.0"
+description = "RailRoute AI FastAPI backend"
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi",
+    "httpx",
+    "pydantic",
+    "pydantic-settings",
+    "networkx",
+    "pytest",
+    "uvicorn",
+]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]

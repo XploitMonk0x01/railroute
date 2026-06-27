@@ -1,0 +1,32 @@
+# Virtual Environments
+.venv/
+venv/
+env/
+__pycache__/
+*.pyc
+
+# Node
+node_modules/
+npm-debug.log
+yarn-error.log
+
+# Next.js
+.next/
+out/
+build/
+
+# IDEs and OS
+.DS_Store
+.idea/
+.vscode/
+
+# Environment Variables
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# User specified
+railroute-architecture.md
+.agent/

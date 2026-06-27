@@ -1,0 +1,233 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@custom-variant dark (&:is(.dark *));
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   RAILROUTE AI — Design System
+   Aesthetic: Precision Transit (Functional + Editorial)
+   Palette: Forest-green dominant, saffron accent, clean whites
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+
+@theme inline {
+    --font-display: var(--font-display);
+    --font-sans: var(--font-sans);
+    --font-heading: var(--font-display);
+
+    --color-sidebar-ring: var(--sidebar-ring);
+    --color-sidebar-border: var(--sidebar-border);
+    --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+    --color-sidebar-accent: var(--sidebar-accent);
+    --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+    --color-sidebar-primary: var(--sidebar-primary);
+    --color-sidebar-foreground: var(--sidebar-foreground);
+    --color-sidebar: var(--sidebar);
+    --color-ring: var(--ring);
+    --color-input: var(--input);
+    --color-border: var(--border);
+    --color-destructive: var(--destructive);
+    --color-accent-foreground: var(--accent-foreground);
+    --color-accent: var(--accent);
+    --color-muted-foreground: var(--muted-foreground);
+    --color-muted: var(--muted);
+    --color-secondary-foreground: var(--secondary-foreground);
+    --color-secondary: var(--secondary);
+    --color-primary-foreground: var(--primary-foreground);
+    --color-primary: var(--primary);
+    --color-popover-foreground: var(--popover-foreground);
+    --color-popover: var(--popover);
+    --color-card-foreground: var(--card-foreground);
+    --color-card: var(--card);
+    --color-foreground: var(--foreground);
+    --color-background: var(--background);
+
+    --radius-sm: calc(var(--radius) * 0.6);
+    --radius-md: calc(var(--radius) * 0.9);
+    --radius-lg: var(--radius);
+    --radius-xl: calc(var(--radius) * 1.5);
+    --radius-2xl: calc(var(--radius) * 2);
+}
+
+/* ── Light Mode (Primary) ── */
+:root {
+    /* Brand greens — forest to emerald */
+    --rr-green-900: #1a3a2e;
+    --rr-green-800: #1e4d3a;
+    --rr-green-700: #226646;
+    --rr-green-600: #2d7f54;
+    --rr-green-500: #339966;
+    --rr-green-400: #47b37a;
+    --rr-green-100: #e6f5ed;
+    --rr-green-50:  #f2fbf6;
+
+    /* Saffron accent */
+    --rr-saffron-600: #d46b00;
+    --rr-saffron-500: #f07d00;
+    --rr-saffron-400: #ff8f1f;
+    --rr-saffron-100: #fff3e0;
+
+    /* Neutrals */
+    --rr-slate-900: #111827;
+    --rr-slate-700: #374151;
+    --rr-slate-500: #6b7280;
+    --rr-slate-300: #d1d5db;
+    --rr-slate-100: #f3f4f6;
+    --rr-slate-50:  #f9fafb;
+
+    /* Shadcn token mapping */
+    --background:          oklch(0.99 0 0);
+    --foreground:          oklch(0.13 0.02 145);
+    --card:                oklch(1 0 0);
+    --card-foreground:     oklch(0.13 0.02 145);
+    --popover:             oklch(1 0 0);
+    --popover-foreground:  oklch(0.13 0.02 145);
+    --primary:             oklch(0.42 0.12 152);   /* forest green */
+    --primary-foreground:  oklch(0.99 0 0);
+    --secondary:           oklch(0.96 0.01 145);
+    --secondary-foreground:oklch(0.25 0.05 145);
+    --muted:               oklch(0.96 0 0);
+    --muted-foreground:    oklch(0.52 0.02 145);
+    --accent:              oklch(0.94 0.02 145);
+    --accent-foreground:   oklch(0.25 0.05 145);
+    --destructive:         oklch(0.60 0.22 27);
+    --border:              oklch(0.91 0.01 145);
+    --input:               oklch(0.91 0.01 145);
+    --ring:                oklch(0.42 0.12 152);
+    --radius:              0.5rem;
+
+    --sidebar:             oklch(0.97 0.01 145);
+    --sidebar-foreground:  oklch(0.13 0.02 145);
+    --sidebar-primary:     oklch(0.42 0.12 152);
+    --sidebar-primary-foreground: oklch(0.99 0 0);
+    --sidebar-accent:      oklch(0.94 0.02 145);
+    --sidebar-accent-foreground: oklch(0.25 0.05 145);
+    --sidebar-border:      oklch(0.91 0.01 145);
+    --sidebar-ring:        oklch(0.42 0.12 152);
+}
+
+/* ── Dark Mode ── */
+.dark {
+    --background:          oklch(0.11 0.02 145);
+    --foreground:          oklch(0.97 0 0);
+    --card:                oklch(0.15 0.02 145);
+    --card-foreground:     oklch(0.97 0 0);
+    --popover:             oklch(0.15 0.02 145);
+    --popover-foreground:  oklch(0.97 0 0);
+    --primary:             oklch(0.62 0.14 152);
+    --primary-foreground:  oklch(0.11 0.02 145);
+    --secondary:           oklch(0.20 0.03 145);
+    --secondary-foreground:oklch(0.97 0 0);
+    --muted:               oklch(0.20 0.02 145);
+    --muted-foreground:    oklch(0.62 0.04 145);
+    --accent:              oklch(0.22 0.03 145);
+    --accent-foreground:   oklch(0.97 0 0);
+    --destructive:         oklch(0.65 0.20 22);
+    --border:              oklch(1 0 0 / 8%);
+    --input:               oklch(1 0 0 / 12%);
+    --ring:                oklch(0.62 0.14 152);
+
+    --sidebar:             oklch(0.14 0.02 145);
+    --sidebar-foreground:  oklch(0.97 0 0);
+    --sidebar-primary:     oklch(0.62 0.14 152);
+    --sidebar-primary-foreground: oklch(0.11 0.02 145);
+    --sidebar-accent:      oklch(0.22 0.03 145);
+    --sidebar-accent-foreground: oklch(0.97 0 0);
+    --sidebar-border:      oklch(1 0 0 / 8%);
+    --sidebar-ring:        oklch(0.62 0.14 152);
+}
+
+/* ── Base Layer ── */
+@layer base {
+    * {
+        @apply border-border outline-ring/50;
+    }
+    body {
+        @apply bg-background text-foreground;
+        font-feature-settings: "rlig" 1, "calt" 1, "ss01" 1;
+    }
+    html {
+        @apply font-sans;
+        scroll-behavior: smooth;
+    }
+
+    /* Focus ring — green branded */
+    :focus-visible {
+        outline: 2px solid var(--rr-green-500);
+        outline-offset: 2px;
+    }
+}
+
+/* ── Custom Properties ── */
+@layer utilities {
+    .text-saffron { color: var(--rr-saffron-500); }
+    .bg-saffron   { background-color: var(--rr-saffron-500); }
+    .border-saffron { border-color: var(--rr-saffron-500); }
+
+    .text-rr-green { color: var(--rr-green-600); }
+    .bg-rr-green   { background-color: var(--rr-green-600); }
+    .bg-rr-green-hero { background-color: var(--rr-green-800); }
+
+    /* Ticket tear-off divider */
+    .ticket-tear {
+        background-image: radial-gradient(circle at 0 50%, transparent 12px, var(--rr-slate-100) 12px),
+                          radial-gradient(circle at 100% 50%, transparent 12px, var(--rr-slate-100) 12px);
+        background-repeat: repeat-y;
+        background-size: calc(100% - 1px) 100%;
+    }
+
+    /* Dashed train line */
+    .train-line {
+        background-image: repeating-linear-gradient(
+            90deg,
+            var(--rr-green-400),
+            var(--rr-green-400) 6px,
+            transparent 6px,
+            transparent 12px
+        );
+    }
+}
+
+/* ── Animations ── */
+@keyframes slide-up {
+    from { opacity: 0; transform: translateY(16px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fade-in {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+}
+
+@keyframes slide-in-right {
+    from { opacity: 0; transform: translateX(20px); }
+    to   { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes pulse-green {
+    0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--rr-green-500) 40%, transparent); }
+    50%       { box-shadow: 0 0 0 6px color-mix(in srgb, var(--rr-green-500) 0%, transparent); }
+}
+
+.animate-slide-up    { animation: slide-up 0.35s ease-out both; }
+.animate-fade-in     { animation: fade-in 0.3s ease-out both; }
+.animate-slide-right { animation: slide-in-right 0.3s ease-out both; }
+
+/* Staggered children */
+.stagger > *:nth-child(1) { animation-delay: 0ms; }
+.stagger > *:nth-child(2) { animation-delay: 60ms; }
+.stagger > *:nth-child(3) { animation-delay: 120ms; }
+.stagger > *:nth-child(4) { animation-delay: 180ms; }
+.stagger > *:nth-child(5) { animation-delay: 240ms; }
+
+/* ── Custom Scrollbar ── */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--rr-green-400); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--rr-green-500); }
+
+/* ── Input date icon color on light mode ── */
+input[type="date"]::-webkit-calendar-picker-indicator {
+    opacity: 0.6;
+    cursor: pointer;
+}
