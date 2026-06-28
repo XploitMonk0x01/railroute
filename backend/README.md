@@ -34,4 +34,5 @@ python -m compileall app tests
 ## Notes
 
 - Run the commands from `railroute/backend`.
-- The backend uses the in-memory MVP dataset for now, so search results are intentionally small.
+- The backend can seed PostgreSQL from the in-memory MVP dataset with `python seed_db.py`.
+- The MVP dataset includes a no-direct-ticket scenario for `HWH` to `PNBE` on `2026-06-28`; the direct train is waitlisted and alternatives route through transfer stations.

@@ -3,6 +3,7 @@ from datetime import date, time
 import pytest
 
 from app.models.rail import Station, TrainSegment
+from app.core.graph import rail_graph
 from app.repositories.rail_repository import InMemoryRailRepository
 from app.schemas.search import SearchRequest
 from app.services.route_service import RouteService
@@ -19,6 +20,7 @@ def route_signature(route) -> tuple[tuple[str, str, str], ...]:
 
 
 def test_search_returns_alternative_when_direct_train_has_no_seats() -> None:
+    rail_graph.G.clear()
     service = RouteService(InMemoryRailRepository())
     request = SearchRequest(
         source="ADI",
@@ -36,6 +38,7 @@ def test_search_returns_alternative_when_direct_train_has_no_seats() -> None:
 
 
 def test_search_rejects_same_source_and_destination() -> None:
+    rail_graph.G.clear()
     service = RouteService(InMemoryRailRepository())
     request = SearchRequest(source="ADI", destination="ADI", date=date(2026, 6, 10))
 
@@ -44,6 +47,7 @@ def test_search_rejects_same_source_and_destination() -> None:
 
 
 def test_search_enforces_max_transfers() -> None:
+    rail_graph.G.clear()
     service = RouteService(InMemoryRailRepository())
     request = SearchRequest(
         source="ADI",
@@ -59,6 +63,7 @@ def test_search_enforces_max_transfers() -> None:
 
 
 def test_search_enforces_max_wait_min_on_transfer_waits_only() -> None:
+    rail_graph.G.clear()
     service = RouteService(InMemoryRailRepository())
     request = SearchRequest(
         source="ADI",
@@ -75,6 +80,7 @@ def test_search_enforces_max_wait_min_on_transfer_waits_only() -> None:
 
 
 def test_search_enforces_max_budget() -> None:
+    rail_graph.G.clear()
     service = RouteService(InMemoryRailRepository())
     request = SearchRequest(
         source="ADI",
@@ -90,6 +96,7 @@ def test_search_enforces_max_budget() -> None:
 
 
 def test_search_avoids_cyclic_routes() -> None:
+    rail_graph.G.clear()
     stations = [
         Station("SRC", "Source", "Source City", "State", 50, False),
         Station("MID", "Midpoint", "Mid City", "State", 60, True),
@@ -116,6 +123,7 @@ def test_search_avoids_cyclic_routes() -> None:
 
 
 def test_search_scores_change_with_filter_preset() -> None:
+    rail_graph.G.clear()
     service = RouteService(InMemoryRailRepository())
     base_request = {
         "source": "ADI",
@@ -139,3 +147,27 @@ def test_search_scores_change_with_filter_preset() -> None:
         or fastest_scores[signature] != availability_scores[signature]
         for signature in common_signatures
     )
+
+
+def test_hwh_to_pnbe_returns_alternatives_when_direct_ticket_unavailable() -> None:
+    rail_graph.G.clear()
+    service = RouteService(InMemoryRailRepository())
+    request = SearchRequest(
+        source="HWH",
+        destination="PNBE",
+        date=date(2026, 6, 28),
+        class_code="3A",
+        constraints={"max_transfers": 2, "max_wait_min": 240},
+    )
+
+    response = service.search(request)
+
+    assert response.direct_available is False
+    assert response.direct_train is not None
+    assert response.direct_train.from_station == "HWH"
+    assert response.direct_train.to_station == "PNBE"
+    assert response.direct_train.availability == "WL"
+    assert response.alternatives
+    assert all(route.segments[0].from_station == "HWH" for route in response.alternatives)
+    assert all(route.segments[-1].to_station == "PNBE" for route in response.alternatives)
+    assert all(route.transfer_count >= 1 for route in response.alternatives)

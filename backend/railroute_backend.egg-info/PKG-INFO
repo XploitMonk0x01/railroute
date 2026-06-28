@@ -4,6 +4,11 @@ Version: 0.1.0
 Summary: RailRoute AI FastAPI backend
 Requires-Python: >=3.11
 Requires-Dist: fastapi
+Requires-Dist: httpx
 Requires-Dist: pydantic
 Requires-Dist: pydantic-settings
+Requires-Dist: networkx
+Requires-Dist: psycopg[binary]
+Requires-Dist: psycopg-pool
+Requires-Dist: pytest
 Requires-Dist: uvicorn

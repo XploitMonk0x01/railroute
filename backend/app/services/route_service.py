@@ -53,6 +53,11 @@ class RouteState:
 class RouteService:
     def __init__(self, rail_repository: RailRepository) -> None:
         self._rail_repository = rail_repository
+        if rail_graph.G.number_of_edges() == 0:
+            rail_graph.build(
+                self._rail_repository.list_stations(),
+                self._rail_repository.list_all_segments(),
+            )
 
     def search(self, request: SearchRequest) -> SearchResponse:
         if request.source == request.destination:
@@ -70,7 +75,12 @@ class RouteService:
         return SearchResponse(
             direct_available=bool(direct_segment and direct_segment.available_seats > 0),
             direct_train=self._segment_response(
-                (direct_segment, datetime.combine(request.date, direct_segment.departure), datetime.combine(request.date, direct_segment.departure) + timedelta(minutes=direct_segment.duration_min), 0)
+                (
+                    direct_segment,
+                    datetime.combine(request.date, direct_segment.departure),
+                    datetime.combine(request.date, direct_segment.departure) + timedelta(minutes=direct_segment.duration_min),
+                    0,
+                )
             )
             if direct_segment
             else None,
@@ -180,7 +190,7 @@ class RouteService:
         average_availability = sum(segment.available_seats for segment, *_ in route.path) / len(route.path)
         score = (
             (travel_time / NORMALIZERS["time"]) * weights["time"]
-            + (route.total_fare / NORMALIZERS["fare"]) * weights["fare"]
+            + (float(route.total_fare) / NORMALIZERS["fare"]) * weights["fare"]
             + route.transfers * weights["transfer"]
             + (route.wait_min / NORMALIZERS["wait"]) * weights["wait"]
             + min(average_availability / 100, 1) * weights["availability"]

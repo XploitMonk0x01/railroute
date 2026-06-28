@@ -1,12 +1,17 @@
 from fastapi.testclient import TestClient
 
+from app.api.v1.dependencies import get_rail_repository
+from app.core.graph import rail_graph
 from app.main import app
+from app.repositories.rail_repository import InMemoryRailRepository
 
 
 client = TestClient(app)
+app.dependency_overrides[get_rail_repository] = lambda: InMemoryRailRepository()
 
 
 def test_search_route_serializes_aliased_fields() -> None:
+    rail_graph.G.clear()
     response = client.post(
         "/api/v1/search",
         json={
@@ -28,6 +33,7 @@ def test_search_route_serializes_aliased_fields() -> None:
 
 
 def test_search_route_rejects_same_station() -> None:
+    rail_graph.G.clear()
     response = client.post(
         "/api/v1/search",
         json={
@@ -63,3 +69,27 @@ def test_health_route_returns_status_and_version() -> None:
     assert payload["status"] == "ok"
     assert payload["service"] == "RailRoute AI"
     assert payload["version"] == "0.1.0"
+
+
+def test_hwh_to_pnbe_search_returns_no_direct_ticket_with_alternatives() -> None:
+    rail_graph.G.clear()
+    response = client.post(
+        "/api/v1/search",
+        json={
+            "source": "HWH",
+            "destination": "PNBE",
+            "date": "2026-06-28",
+            "class": "3A",
+            "constraints": {"max_transfers": 2, "max_wait_min": 240},
+        },
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["direct_available"] is False
+    assert payload["direct_train"]["from"] == "HWH"
+    assert payload["direct_train"]["to"] == "PNBE"
+    assert payload["direct_train"]["availability"] == "WL"
+    assert payload["alternatives"]
+    assert payload["alternatives"][0]["segments"][0]["from"] == "HWH"
+    assert payload["alternatives"][0]["segments"][-1]["to"] == "PNBE"

@@ -9,6 +9,8 @@ dependencies = [
     "pydantic",
     "pydantic-settings",
     "networkx",
+    "psycopg[binary]",
+    "psycopg-pool",
     "pytest",
     "uvicorn",
 ]
