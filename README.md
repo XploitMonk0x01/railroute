@@ -40,7 +40,7 @@ Before setting up the project, ensure you have the following installed:
 ### 1. Clone the Repository
 
 ```bash
-git clone https://github.com/your-username/railroute.git
+git clone https://github.com/XploitMonk0x01/railroute.git
 cd railroute
 ```
 
@@ -59,8 +59,8 @@ pip install -e .
 pip install -e ../automation
 playwright install chromium
 
-# Create the environment file for IRCTC credentials
-cp ../automation/.env.example .env
+# Create the environment file (includes DB connection and IRCTC credentials)
+cp .env.example .env
 # Edit .env and set your IRCTC_USER and IRCTC_PASS
 ```
 

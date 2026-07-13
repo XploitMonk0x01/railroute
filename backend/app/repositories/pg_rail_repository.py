@@ -16,7 +16,7 @@ class PgRailRepository(RailRepository):
     def list_stations(self) -> list[Station]:
         with self._pool.connection() as conn:
             with conn.cursor(row_factory=class_row(Station)) as cur:
-                cur.execute("SELECT * FROM stations ORDER BY score DESC")
+                cur.execute("SELECT code, name, city, state, score, is_junction FROM stations ORDER BY score DESC")
                 return cur.fetchall()
 
     def search_stations(self, query: str) -> list[Station]:
@@ -24,13 +24,13 @@ class PgRailRepository(RailRepository):
         if not normalized:
             with self._pool.connection() as conn:
                 with conn.cursor(row_factory=class_row(Station)) as cur:
-                    cur.execute("SELECT * FROM stations ORDER BY score DESC LIMIT 10")
+                    cur.execute("SELECT code, name, city, state, score, is_junction FROM stations ORDER BY score DESC LIMIT 10")
                     return cur.fetchall()
         
         with self._pool.connection() as conn:
             with conn.cursor(row_factory=class_row(Station)) as cur:
                 cur.execute("""
-                    SELECT * FROM stations 
+                    SELECT code, name, city, state, score, is_junction FROM stations 
                     WHERE LOWER(code) LIKE %s OR LOWER(name) LIKE %s OR LOWER(city) LIKE %s 
                     ORDER BY score DESC
                 """, (f"%{normalized}%", f"%{normalized}%", f"%{normalized}%"))

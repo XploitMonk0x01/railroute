@@ -29,6 +29,7 @@ app/schemas/station.py
 app/schemas/watchlist.py
 app/services/__init__.py
 app/services/route_service.py
+app/services/scraper_integration.py
 app/services/station_service.py
 railroute_backend.egg-info/PKG-INFO
 railroute_backend.egg-info/SOURCES.txt
