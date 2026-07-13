@@ -6,7 +6,7 @@ RailRoute AI is a Smart Train Route Planner for Indian Railways. Our intelligent
 
 - **Multi-Hop Route Discovery:** Automatically finds alternative routes when direct tickets are unavailable.
 - **Smart Route Scoring:** Ranks alternatives based on customizable weights (time, fare, transfers, wait time).
-- **Waitlist Monitoring:** Built-in mechanisms to support future waitlist alert features.
+- **Live Availability Scraping:** Dynamically fetches real-time IRCTC seat availability using an integrated Playwright automation engine.
 - **Modern Tech Stack:** Blazing fast FastAPI backend paired with a beautiful Next.js frontend.
 
 ---
@@ -15,6 +15,7 @@ RailRoute AI is a Smart Train Route Planner for Indian Railways. Our intelligent
 
 - **Backend Language**: Python 3.11+
 - **Backend Framework**: FastAPI
+- **Automation Engine**: Playwright (Python)
 - **Graph Engine**: NetworkX (In-memory route computation)
 - **Frontend Framework**: Next.js 16 (React 19)
 - **State Management**: Zustand
@@ -53,6 +54,14 @@ python -m venv .venv
 source .venv/bin/activate
 python -m pip install --upgrade pip
 pip install -e .
+
+# Install the automation module and Playwright browsers
+pip install -e ../automation
+playwright install chromium
+
+# Create the environment file for IRCTC credentials
+cp ../automation/.env.example .env
+# Edit .env and set your IRCTC_USER and IRCTC_PASS
 ```
 
 ### 3. Database Setup
@@ -66,7 +75,7 @@ createdb railroute
 # Load the schema
 psql -d railroute -f schema.sql
 
-# Seed the MVP dataset (includes the HWH -> PNBE waitlist scenario)
+# Seed the static route topology (stations and train schedules)
 python seed_db.py
 ```
 
@@ -127,9 +136,9 @@ railroute/
 
 1. **User Action:** The user inputs a source (`HWH`), destination (`PNBE`), date, and preferences into the Next.js frontend.
 2. **API Call:** The frontend (`lib/api.ts`) sends a POST request to the FastAPI backend (`/api/v1/search`).
-3. **Controller & Service:** The `RouteService` validates the request and begins the graph traversal.
-4. **Graph Engine:** NetworkX traverses the in-memory graph (pre-built from PostgreSQL `train_segments` data) using a modified Dijkstra's algorithm to find the optimal paths, adhering to transfer limits and wait times.
-5. **Ranking:** The `RouteService` scores and ranks the discovered routes based on the user's selected `filter_preset` (e.g., fastest, cheapest).
+3. **Candidate Discovery:** The `RouteService` finds candidate paths on the static graph, temporarily ignoring seat availability.
+4. **Live Scraping:** The automation engine (`IRCTCClient`) is triggered. It spawns Playwright, fetches live IRCTC seat availability for the candidate trains concurrently, and upserts the real data into PostgreSQL.
+5. **Graph Engine & Ranking:** The graph is updated with live data. NetworkX finalizes the optimal paths (using a modified Dijkstra's algorithm), and ranks them based on the user's `filter_preset` (e.g., fastest, cheapest).
 6. **Response:** FastAPI serializes the ranked routes into a JSON response using Pydantic models.
 7. **Render:** The Zustand store updates on the frontend, triggering the React UI to display the alternative multi-hop routes.
 
@@ -226,7 +235,12 @@ pytest -v
 ### No Alternative Routes Found
 
 **Error:** The API returns `{"direct_available": false, "alternatives": []}` for a route that should have alternatives.
-**Solution:** Ensure your PostgreSQL database has been seeded properly. Run `python seed_db.py` in the `backend` directory to load the `train_segments` table with the mock data, then restart your FastAPI server.
+**Solution:** Ensure your PostgreSQL database has been seeded properly with the static topology. Run `python seed_db.py` in the `backend` directory. Also check the backend logs to ensure the Playwright scraper successfully logged into IRCTC and fetched availability.
+
+### Scraper Fails to Log In
+
+**Error:** The backend logs show IRCTC login failures or timeouts.
+**Solution:** Ensure your `IRCTC_USER` and `IRCTC_PASS` are correctly set in `backend/.env`. You can also run the backend with `SCRAPER_HEADLESS=false` to watch the browser visually and solve any manual CAPTCHAs on the first run.
 
 ### Database Connection Refused
 

@@ -6,6 +6,7 @@ from app.core.config import settings
 from app.core.graph import rail_graph
 from app.models.rail import TrainSegment
 from app.repositories.rail_repository import RailRepository
+from app.services.scraper_integration import scrape_and_upsert_live, RouteQuery
 from app.schemas.search import (
     FilterPreset,
     RouteResponse,
@@ -59,12 +60,56 @@ class RouteService:
                 self._rail_repository.list_all_segments(),
             )
 
-    def search(self, request: SearchRequest) -> SearchResponse:
+    async def search(self, request: SearchRequest) -> SearchResponse:
         if request.source == request.destination:
             raise ValueError("source and destination must be different")
 
-        routes = self._find_routes(request)
-        direct_segment = self._direct_segment(request)
+        # 1. Find candidate routes IGNORING availability
+        candidates = self._find_routes(request, ignore_availability=True)
+        direct_cand = self._direct_segment(request, ignore_availability=True)
+        
+        # 2. Collect unique queries to scrape
+        queries_to_scrape = {}
+        
+        if direct_cand:
+            q = RouteQuery(
+                from_code=direct_cand.from_station,
+                to_code=direct_cand.to_station,
+                date=request.date,
+                class_code=request.class_code or "3A"
+            )
+            queries_to_scrape[str(q)] = q
+            
+        for state in candidates:
+            for path_segment in state.path:
+                seg = path_segment[0]
+                q = RouteQuery(
+                    from_code=seg.from_station,
+                    to_code=seg.to_station,
+                    date=request.date,
+                    class_code=request.class_code or "3A"
+                )
+                queries_to_scrape[str(q)] = q
+                
+        # 3. Live Scrape
+        await scrape_and_upsert_live(list(queries_to_scrape.values()))
+        
+        # 4. Refresh Graph Data (since db was updated, we can just fetch real availability)
+        # However, for simplicity and since _find_routes uses in-memory rail_graph (which we can update)
+        # or we could just re-instantiate or we can just fetch from DB again?
+        # Wait, the graph engine (rail_graph.G) uses in-memory edge data.
+        # It's NOT automatically updated when we write to DB!
+        # We need to update the in-memory graph edges with the new availability.
+        # Or we can just re-read the segments from the DB and rebuild the graph.
+        
+        stations = self._rail_repository.list_stations()
+        segments = self._rail_repository.list_all_segments()
+        rail_graph.build(stations, segments)
+
+        # 5. Now find routes ENFORCING availability
+        routes = self._find_routes(request, ignore_availability=False)
+        direct_segment = self._direct_segment(request, ignore_availability=False)
+        
         alternatives = [
             route
             for route in routes
@@ -91,7 +136,7 @@ class RouteService:
             generated_at=datetime.now(timezone.utc),
         )
 
-    def _find_routes(self, request: SearchRequest) -> list[RouteState]:
+    def _find_routes(self, request: SearchRequest, ignore_availability: bool = False) -> list[RouteState]:
         start_time = datetime.combine(request.date, time.min)
         heap = [RouteState(0, request.source, start_time, visited_stations=frozenset({request.source}))]
         visited: dict[tuple[str, int], float] = {}
@@ -130,7 +175,7 @@ class RouteService:
                     continue
                 if request.class_code and segment.class_code != request.class_code:
                     continue
-                if segment.available_seats <= 0 and segment.to_station == request.destination:
+                if not ignore_availability and segment.available_seats <= 0 and segment.to_station == request.destination:
                     continue
 
                 last_train = state.path[-1][0].train_number if state.path else None
@@ -165,14 +210,17 @@ class RouteService:
 
         return results
 
-    def _direct_segment(self, request: SearchRequest) -> TrainSegment | None:
+    def _direct_segment(self, request: SearchRequest, ignore_availability: bool = False) -> TrainSegment | None:
         candidates = [
             segment
             for segment in self._rail_repository.list_direct_segments(request.source, request.destination)
             if segment.runs_on(request.date)
             and (request.class_code is None or segment.class_code == request.class_code)
         ]
-        return min(candidates, key=lambda segment: (segment.available_seats <= 0, segment.duration_min), default=None)
+        if ignore_availability:
+            return min(candidates, key=lambda segment: segment.duration_min, default=None)
+        else:
+            return min(candidates, key=lambda segment: (segment.available_seats <= 0, segment.duration_min), default=None)
 
     def _is_direct_path(self, route: RouteState, request: SearchRequest) -> bool:
         return (

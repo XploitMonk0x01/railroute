@@ -8,3 +8,10 @@ node_modules/
 *.log
 .env
 .DS_Store
+
+# Automation module
+automation/.venv/
+automation/.env
+automation/playwright-state.json
+automation/auth-state.json
+*.session.json

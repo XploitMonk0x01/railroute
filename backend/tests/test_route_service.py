@@ -19,7 +19,8 @@ def route_signature(route) -> tuple[tuple[str, str, str], ...]:
     return tuple((segment.train_number, segment.from_station, segment.to_station) for segment in route.segments)
 
 
-def test_search_returns_alternative_when_direct_train_has_no_seats() -> None:
+@pytest.mark.asyncio
+async def test_search_returns_alternative_when_direct_train_has_no_seats() -> None:
     rail_graph.G.clear()
     service = RouteService(InMemoryRailRepository())
     request = SearchRequest(
@@ -29,7 +30,7 @@ def test_search_returns_alternative_when_direct_train_has_no_seats() -> None:
         constraints={"max_transfers": 2, "max_wait_min": 240},
     )
 
-    response = service.search(request)
+    response = await service.search(request)
 
     assert response.direct_available is False
     assert response.alternatives
@@ -37,16 +38,18 @@ def test_search_returns_alternative_when_direct_train_has_no_seats() -> None:
     assert response.alternatives[0].segments[-1].to_station == "NDLS"
 
 
-def test_search_rejects_same_source_and_destination() -> None:
+@pytest.mark.asyncio
+async def test_search_rejects_same_source_and_destination() -> None:
     rail_graph.G.clear()
     service = RouteService(InMemoryRailRepository())
     request = SearchRequest(source="ADI", destination="ADI", date=date(2026, 6, 10))
 
     with pytest.raises(ValueError, match="source and destination"):
-        service.search(request)
+        await service.search(request)
 
 
-def test_search_enforces_max_transfers() -> None:
+@pytest.mark.asyncio
+async def test_search_enforces_max_transfers() -> None:
     rail_graph.G.clear()
     service = RouteService(InMemoryRailRepository())
     request = SearchRequest(
@@ -56,13 +59,14 @@ def test_search_enforces_max_transfers() -> None:
         constraints={"max_transfers": 1, "max_wait_min": 240},
     )
 
-    response = service.search(request)
+    response = await service.search(request)
 
     assert response.alternatives
     assert all(route.transfer_count <= 1 for route in response.alternatives)
 
 
-def test_search_enforces_max_wait_min_on_transfer_waits_only() -> None:
+@pytest.mark.asyncio
+async def test_search_enforces_max_wait_min_on_transfer_waits_only() -> None:
     rail_graph.G.clear()
     service = RouteService(InMemoryRailRepository())
     request = SearchRequest(
@@ -72,14 +76,15 @@ def test_search_enforces_max_wait_min_on_transfer_waits_only() -> None:
         constraints={"max_wait_min": 1},
     )
 
-    response = service.search(request)
+    response = await service.search(request)
 
     assert response.direct_available is True
     assert response.direct_train is not None
     assert response.direct_train.to_station == "BRC"
 
 
-def test_search_enforces_max_budget() -> None:
+@pytest.mark.asyncio
+async def test_search_enforces_max_budget() -> None:
     rail_graph.G.clear()
     service = RouteService(InMemoryRailRepository())
     request = SearchRequest(
@@ -89,13 +94,14 @@ def test_search_enforces_max_budget() -> None:
         constraints={"max_budget": 900},
     )
 
-    response = service.search(request)
+    response = await service.search(request)
 
     assert response.alternatives
     assert all(route.total_fare <= 900 for route in response.alternatives)
 
 
-def test_search_avoids_cyclic_routes() -> None:
+@pytest.mark.asyncio
+async def test_search_avoids_cyclic_routes() -> None:
     rail_graph.G.clear()
     stations = [
         Station("SRC", "Source", "Source City", "State", 50, False),
@@ -116,13 +122,14 @@ def test_search_avoids_cyclic_routes() -> None:
         constraints={"max_transfers": 3, "max_wait_min": 240},
     )
 
-    response = service.search(request)
+    response = await service.search(request)
 
     assert response.alternatives
     assert all(len({segment.from_station for segment in route.segments} | {route.segments[-1].to_station}) == len(route.segments) + 1 for route in response.alternatives)
 
 
-def test_search_scores_change_with_filter_preset() -> None:
+@pytest.mark.asyncio
+async def test_search_scores_change_with_filter_preset() -> None:
     rail_graph.G.clear()
     service = RouteService(InMemoryRailRepository())
     base_request = {
@@ -132,9 +139,9 @@ def test_search_scores_change_with_filter_preset() -> None:
         "constraints": {"max_transfers": 2, "max_wait_min": 240},
     }
 
-    fastest = service.search(SearchRequest(**base_request, filter_preset="fastest"))
-    cheapest = service.search(SearchRequest(**base_request, filter_preset="cheapest"))
-    best_availability = service.search(SearchRequest(**base_request, filter_preset="best_availability"))
+    fastest = await service.search(SearchRequest(**base_request, filter_preset="fastest"))
+    cheapest = await service.search(SearchRequest(**base_request, filter_preset="cheapest"))
+    best_availability = await service.search(SearchRequest(**base_request, filter_preset="best_availability"))
 
     fastest_scores = {route_signature(route): route.score for route in fastest.alternatives}
     cheapest_scores = {route_signature(route): route.score for route in cheapest.alternatives}
@@ -149,7 +156,8 @@ def test_search_scores_change_with_filter_preset() -> None:
     )
 
 
-def test_hwh_to_pnbe_returns_alternatives_when_direct_ticket_unavailable() -> None:
+@pytest.mark.asyncio
+async def test_hwh_to_pnbe_returns_alternatives_when_direct_ticket_unavailable() -> None:
     rail_graph.G.clear()
     service = RouteService(InMemoryRailRepository())
     request = SearchRequest(
@@ -160,7 +168,7 @@ def test_hwh_to_pnbe_returns_alternatives_when_direct_ticket_unavailable() -> No
         constraints={"max_transfers": 2, "max_wait_min": 240},
     )
 
-    response = service.search(request)
+    response = await service.search(request)
 
     assert response.direct_available is False
     assert response.direct_train is not None

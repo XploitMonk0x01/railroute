@@ -52,7 +52,7 @@ def seed():
                         VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                         """,
                         (seg.train_number, seg.from_station, seg.to_station, seg.departure, seg.arrival, 
-                         seg.duration_min, seg.distance_km, seg.fare, seg.class_code, seg.available_seats, list(seg.run_days))
+                         seg.duration_min, seg.distance_km, seg.fare, seg.class_code, 0, list(seg.run_days))
                     )
         conn.commit()
     db_pool.close()
