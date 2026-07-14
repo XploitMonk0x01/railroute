@@ -12,7 +12,7 @@ class Settings(BaseSettings):
     transfer_penalty_min: int = Field(default=60, ge=0)
     database_url: str = "postgresql://master@127.0.0.1:5432/railroute"
 
-    model_config = SettingsConfigDict(env_prefix="RAILROUTE_")
+    model_config = SettingsConfigDict(env_prefix="RAILROUTE_", env_file=".env", env_file_encoding="utf-8", extra="ignore")
 
 
 settings = Settings()
