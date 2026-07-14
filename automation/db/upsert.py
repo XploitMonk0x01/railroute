@@ -3,28 +3,13 @@ automation/db/upsert.py
 ────────────────────────
 Writes scraped AvailabilityResult objects into the RailRoute PostgreSQL
 database.
-
-Two write paths
-───────────────
-1. seat_availability  — date-specific table that the plan specifies as the
-   canonical store for real availability data.  Uses INSERT ... ON CONFLICT
-   DO UPDATE so repeated scrapes are idempotent.
-
-2. train_segments.available_seats — the column the graph engine currently reads
-   when deciding whether a route is "available".  We sync this so the FastAPI
-   /api/v1/search endpoint immediately returns real data without needing a
-   graph rebuild.
-
-Dependencies
-────────────
-• psycopg3 (same driver as the backend) — no extra imports needed.
-• No ORM / no backend package imports so this module works standalone.
 """
 
 from __future__ import annotations
 
 import logging
 from collections.abc import Iterable
+from datetime import datetime, time
 
 import psycopg
 
@@ -41,15 +26,14 @@ _train_id_cache: dict[str, int | None] = {}
 
 
 def resolve_train_id(
-    conn: psycopg.Connection, train_number: str
-) -> int | None:
+    conn: psycopg.Connection, train_number: str, train_name: str
+) -> int:
     """
     Look up the primary key `id` for a given train number.
-    Returns None if the train is not in the DB (logs a warning).
-    Results are cached in-process for the lifetime of the scraper run.
+    Inserts the train if it doesn't exist.
     """
-    if train_number in _train_id_cache:
-        return _train_id_cache[train_number]
+    if train_number in _train_id_cache and _train_id_cache[train_number] is not None:
+        return _train_id_cache[train_number]  # type: ignore
 
     with conn.cursor() as cur:
         cur.execute(
@@ -58,15 +42,18 @@ def resolve_train_id(
         )
         row = cur.fetchone()
 
-    tid = row[0] if row else None
-    _train_id_cache[train_number] = tid
+        if row:
+            tid = row[0]
+        else:
+            log.info("Inserting missing train: %s (%s)", train_number, train_name)
+            cur.execute(
+                "INSERT INTO trains (number, name) VALUES (%s, %s) RETURNING id",
+                (train_number, train_name),
+            )
+            res = cur.fetchone()
+            tid = res[0] if res else 0
 
-    if tid is None:
-        log.warning(
-            "Train %s not found in the trains table — skipping. "
-            "Run seed_db.py or add this train manually.",
-            train_number,
-        )
+    _train_id_cache[train_number] = tid
     return tid
 
 
@@ -117,28 +104,12 @@ def upsert_results(
     *,
     also_update_segments: bool = True,
 ) -> tuple[int, int]:
-    """
-    Upsert a batch of AvailabilityResult rows into `seat_availability`.
-
-    Parameters
-    ----------
-    conn                 : open psycopg3 connection (caller manages transaction)
-    results              : iterable of scraped availability records
-    also_update_segments : if True, also update train_segments.available_seats
-
-    Returns
-    -------
-    (inserted_or_updated, skipped) counts
-    """
     ok = 0
     skipped = 0
 
     with conn.cursor() as cur:
         for r in results:
-            train_id = resolve_train_id(conn, r.train_number)
-            if train_id is None:
-                skipped += 1
-                continue
+            train_id = resolve_train_id(conn, r.train_number, r.train_name)
 
             cur.execute(
                 _UPSERT_SEAT_AVAIL,
@@ -159,17 +130,25 @@ def upsert_results(
             ok += 1
 
             if also_update_segments:
-                update_segment_seats(
+                _update_segment_seats(
                     conn,
+                    train_id       = train_id,
                     train_number   = r.train_number,
                     from_station   = r.from_code,
                     to_station     = r.to_code,
                     class_code     = r.class_code,
                     available_seats= r.available_seats,
+                    departure      = r.departure,
+                    arrival        = r.arrival,
+                    duration_min   = r.duration_min,
+                    fare           = r.fare,
                     cur            = cur,
                 )
 
-    conn.commit()
+    # Don't commit here! Let the caller manage the transaction.
+    # Actually wait, in previous version it did conn.commit() here! 
+    # But route_service.py's caller also wraps it in `with conn.transaction():`.
+    # Let's not commit explicitly here.
     log.info("DB write complete: %d upserted, %d skipped.", ok, skipped)
     return ok, skipped
 
@@ -187,23 +166,49 @@ WHERE  train_number    = %(train_number)s
   AND  class_code      = %(class_code)s
 """
 
+_INSERT_SEGMENT = """
+INSERT INTO train_segments (
+    train_number,
+    from_station,
+    to_station,
+    class_code,
+    departure,
+    arrival,
+    duration_min,
+    available_seats,
+    fare,
+    distance_km,
+    run_days
+) VALUES (
+    %(train_number)s,
+    %(from_station)s,
+    %(to_station)s,
+    %(class_code)s,
+    %(departure)s,
+    %(arrival)s,
+    %(duration_min)s,
+    %(seats)s,
+    %(fare)s,
+    %(distance_km)s,
+    %(run_days)s
+)
+"""
 
-def update_segment_seats(
+
+def _update_segment_seats(
     conn: psycopg.Connection,
+    train_id:        int,
     train_number:    str,
     from_station:    str,
     to_station:      str,
     class_code:      str,
     available_seats: int,
-    *,
-    cur: psycopg.Cursor | None = None,
-) -> int:
-    """
-    Update `available_seats` in the train_segments table for matching rows.
-    This keeps the graph engine's data in sync with fresh scrape results.
-
-    Returns the number of rows updated (0 = segment not yet in DB).
-    """
+    departure:       str,
+    arrival:         str,
+    duration_min:    int,
+    fare:            float | None,
+    cur: psycopg.Cursor,
+) -> None:
     params = {
         "train_number":   train_number,
         "from_station":   from_station,
@@ -212,19 +217,32 @@ def update_segment_seats(
         "seats":          available_seats,
     }
 
-    if cur is not None:
-        cur.execute(_UPDATE_SEGMENTS, params)
-        updated = cur.rowcount
-    else:
-        with conn.cursor() as c:
-            c.execute(_UPDATE_SEGMENTS, params)
-            updated = c.rowcount
-        conn.commit()
-
-    if updated == 0:
-        log.debug(
-            "No train_segment found for %s %s→%s [%s] — "
-            "seat count NOT synced to graph engine.",
+    cur.execute(_UPDATE_SEGMENTS, params)
+    
+    if cur.rowcount == 0:
+        log.info(
+            "Inserting missing train_segment: %s %s→%s [%s]",
             train_number, from_station, to_station, class_code,
         )
-    return updated
+        
+        # convert 'HH:MM' string to datetime.time
+        def parse_time(t_str: str) -> time:
+            try:
+                dt = datetime.strptime(t_str, "%H:%M")
+                return dt.time()
+            except Exception:
+                return time(0, 0)
+                
+        cur.execute(_INSERT_SEGMENT, {
+            "train_number": train_number,
+            "from_station": from_station,
+            "to_station": to_station,
+            "class_code": class_code,
+            "departure": parse_time(departure),
+            "arrival": parse_time(arrival),
+            "duration_min": duration_min,
+            "seats": available_seats,
+            "fare": fare if fare is not None else 0.0,
+            "distance_km": 0,
+            "run_days": [0, 1, 2, 3, 4, 5, 6],
+        })

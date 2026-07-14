@@ -31,9 +31,9 @@ class RouteQuery:
         object.__setattr__(self, "quota",      self.quota.strip().upper())
 
     @property
-    def irctc_date_str(self) -> str:
-        """Return date in IRCTC's expected format: DD/MM/YYYY."""
-        return self.date.strftime("%d/%m/%Y")
+    def confirmtkt_date_str(self) -> str:
+        """Return date in ConfirmTKT's URL format: DD-MM-YYYY."""
+        return self.date.strftime("%d-%m-%Y")
 
     def __str__(self) -> str:
         return (
@@ -65,8 +65,11 @@ class AvailabilityResult:
     available_seats: int = 0
     wl_number:       int = 0       # > 0 only when status == "WL"
     fare:            float | None = None
+    departure:       str = "00:00" # HH:MM
+    arrival:         str = "00:00" # HH:MM
+    duration_min:    int = 0
     fetched_at:      datetime = field(default_factory=datetime.utcnow)
-    raw_text:        str = ""      # original string from IRCTC for debugging
+    raw_text:        str = ""      # original string from ConfirmTKT for debugging
 
     def __post_init__(self) -> None:
         self.train_number = self.train_number.strip()
