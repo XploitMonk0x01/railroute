@@ -6,7 +6,7 @@ RailRoute AI is a Smart Train Route Planner for Indian Railways. Our intelligent
 
 - **Multi-Hop Route Discovery:** Automatically finds alternative routes when direct tickets are unavailable.
 - **Smart Route Scoring:** Ranks alternatives based on customizable weights (time, fare, transfers, wait time).
-- **Live Availability Scraping:** Dynamically fetches real-time IRCTC seat availability using an integrated Playwright automation engine.
+- **Live Availability Scraping:** Dynamically fetches real-time seat availability using an integrated Playwright automation engine (via ConfirmTkt).
 - **Modern Tech Stack:** Blazing fast FastAPI backend paired with a beautiful Next.js frontend.
 
 ---
@@ -59,9 +59,8 @@ pip install -e .
 pip install -e ../automation
 playwright install chromium
 
-# Create the environment file (includes DB connection and IRCTC credentials)
+# Create the environment file (includes DB connection)
 cp .env.example .env
-# Edit .env and set your IRCTC_USER and IRCTC_PASS
 ```
 
 ### 3. Database Setup

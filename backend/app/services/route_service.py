@@ -71,14 +71,15 @@ class RouteService:
         # 2. Collect unique queries to scrape
         queries_to_scrape = {}
         
-        if direct_cand:
-            q = RouteQuery(
-                from_code=direct_cand.from_station,
-                to_code=direct_cand.to_station,
-                date=request.date,
-                class_code=request.class_code or "3A"
-            )
-            queries_to_scrape[str(q)] = q
+        # Always scrape the direct route first, even if it's not in the static graph.
+        # This guarantees we fetch any newly added direct trains.
+        q_direct = RouteQuery(
+            from_code=request.source,
+            to_code=request.destination,
+            date=request.date,
+            class_code=request.class_code or "3A"
+        )
+        queries_to_scrape[str(q_direct)] = q_direct
             
         for state in candidates:
             for path_segment in state.path:

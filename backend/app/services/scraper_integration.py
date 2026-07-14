@@ -5,7 +5,7 @@ from datetime import date
 from typing import List
 from pathlib import Path
 
-# Load .env file so os.getenv() can read IRCTC_USER, IRCTC_PASS, etc.
+# Load .env file so os.getenv() can read settings
 try:
     from dotenv import load_dotenv
     _env_path = Path(__file__).resolve().parents[3] / "backend" / ".env"
@@ -20,7 +20,7 @@ automation_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "../..
 if automation_path not in sys.path:
     sys.path.insert(0, automation_path)
 
-from scraper.irctc_client import IRCTCClient
+from scraper.confirmtkt_client import ConfirmTktClient
 from scraper.models import RouteQuery
 from db.upsert import upsert_results
 from app.database import db_pool
@@ -28,29 +28,24 @@ from app.database import db_pool
 
 async def scrape_and_upsert_live(queries: List[RouteQuery]) -> None:
     """
-    Scrapes live availability for a list of RouteQueries and upserts them into the database.
+    Scrapes live availability for a list of RouteQueries from ConfirmTkt
+    and upserts them into the database.
+
+    ConfirmTkt requires no login — it publicly exposes cached IRCTC
+    availability data, making it far more reliable than direct IRCTC scraping.
     """
     if not queries or os.getenv("TESTING") == "1":
         return
 
-    # Read credentials and config from environment
-    irctc_user = os.getenv("IRCTC_USER", "")
-    irctc_pass = os.getenv("IRCTC_PASS", "")
-    headless = os.getenv("SCRAPER_HEADLESS", "false").lower() == "true"
-    max_tabs = int(os.getenv("SCRAPER_MAX_TABS", "6"))
+    headless = os.getenv("SCRAPER_HEADLESS", "true").lower() == "true"
+    max_tabs = int(os.getenv("SCRAPER_MAX_TABS", "4"))
 
-    if not irctc_user or not irctc_pass:
-        print("Warning: IRCTC_USER or IRCTC_PASS not set. Scraper may fail if login is required.")
-
-    async with IRCTCClient(headless=headless, max_tabs=max_tabs) as client:
-        if irctc_user and irctc_pass:
-            await client.login(irctc_user, irctc_pass)
-        
+    async with ConfirmTktClient(headless=headless, max_tabs=max_tabs) as client:
         results = await client.multi_tab_search(queries)
-    
+
     if results:
         with db_pool.connection() as conn:
             upsert_results(conn, results)
-        print(f"Scraped and upserted {len(results)} availability records.")
+        print(f"Scraped and upserted {len(results)} availability records from ConfirmTkt.")
     else:
-        print("Scraper returned no results.")
+        print("ConfirmTkt scraper returned no results.")

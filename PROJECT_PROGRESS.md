@@ -14,57 +14,43 @@ RailRoute is an MVP train-only route planning system based on the architecture i
   - Initial auth and watchlist route modules are present.
 - Route engine:
   - Graph-based train segment discovery.
-  - Transfer-aware alternative route search.
+  - Transfer-aware alternative route search allowing up to 24 hour connections.
   - Direct unavailable train detection.
   - Route ranking presets for default, fastest, cheapest, least transfers, and best availability.
   - Cycle prevention for candidate routes.
+- Live Data Scraping:
+  - Integrated ConfirmTkt automation scraper using Playwright.
+  - Automatically fetches availability for direct and connecting routes simultaneously.
+  - Syncs live scraped seat availability into the graph engine for immediate routing.
 - Data layer:
   - PostgreSQL schema in `backend/schema.sql`.
   - Repository abstraction with in-memory and PostgreSQL implementations.
-  - Seed script in `backend/seed_db.py`.
+  - Seed script in `backend/seed_db.py` connecting West (ADI/BRC/NDLS) and East (HWH/PNBE) corridors.
 - Frontend:
   - Next.js app shell with search UI components, route cards, filter controls, station selector, and API client.
 
-## HWH to PNBE Scenario
+## Scenarios Handled
 
-The MVP dataset now supports the requested scenario:
+The MVP dataset now successfully connects disjoint regions and fetches live data:
 
-- Source: `HWH` Howrah Junction
-- Destination: `PNBE` Patna Junction
-- Journey date: `2026-06-28`
-- Direct train: `12351` Howrah Patna Express
-- Direct availability: `WL`, so `direct_available` is `false`
+- Source: `BRC` (Vadodara)
+- Destination: `PNBE` (Patna)
+- Direct availability check: Verified via ConfirmTkt.
 - Alternative routes:
-  - `HWH -> BWN -> PNBE`
-  - `HWH -> ASN -> PNBE`
-
-Expected API request:
-
-```json
-{
-  "source": "HWH",
-  "destination": "PNBE",
-  "date": "2026-06-28",
-  "class": "3A",
-  "constraints": {
-    "max_transfers": 2,
-    "max_wait_min": 240
-  }
-}
-```
+  - `BRC -> KOTA -> NDLS -> PNBE` (Overnight layovers supported up to 24h)
+  - `BRC -> KOTA -> NDLS -> HWH -> PNBE`
 
 ## Verification
 
-Covered by tests:
+Covered by tests and live system validation:
 
-- HWH to PNBE returns `direct_available: false`.
-- Direct HWH to PNBE train is included as waitlisted metadata.
-- Alternatives are returned and terminate at PNBE.
-- Existing route search, station search, health route, scoring, wait, budget, transfer, and cycle behavior remain covered.
+- End-to-end routing successfully connects BRC and PNBE.
+- Live scraper launches Chromium and correctly parses waitlist/availability data.
+- Default constraints updated to support longer transfers (`max_wait_min=1440`).
+- Mixed-class connections (e.g., CC to 3A) are handled properly in the search.
 
 ## Next Work
 
-- Make seat availability date-specific instead of segment-level.
 - Add Redis route and availability caching.
 - Add background graph rebuild and availability sync jobs.
 - Wire the frontend search page fully against live backend responses.

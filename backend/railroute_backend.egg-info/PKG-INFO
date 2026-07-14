@@ -12,3 +12,4 @@ Requires-Dist: psycopg[binary]
 Requires-Dist: psycopg-pool
 Requires-Dist: pytest
 Requires-Dist: uvicorn
+Requires-Dist: playwright

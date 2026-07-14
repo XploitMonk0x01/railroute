@@ -12,7 +12,7 @@ FilterPreset = Literal["default", "fastest", "cheapest", "least_transfers", "bes
 
 class SearchConstraints(BaseModel):
     max_transfers: int = Field(default=2, ge=0, le=5)
-    max_wait_min: int = Field(default=240, ge=0, le=1440)
+    max_wait_min: int = Field(default=1440, ge=0, le=2880)
     max_budget: float | None = Field(default=None, gt=0)
 
 

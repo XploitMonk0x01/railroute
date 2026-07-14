@@ -7,3 +7,4 @@ psycopg[binary]
 psycopg-pool
 pytest
 uvicorn
+playwright
