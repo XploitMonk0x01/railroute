@@ -70,29 +70,47 @@ class RouteService:
         
         # 2. Collect unique queries to scrape
         queries_to_scrape = {}
-        
-        # Always scrape the direct route first, even if it's not in the static graph.
-        # This guarantees we fetch any newly added direct trains.
-        q_direct = RouteQuery(
+
+        # ALWAYS scrape the direct user-requested route — this ensures Chromium
+        # launches even when the route is not yet in the static seeded graph.
+        direct_user_query = RouteQuery(
             from_code=request.source,
             to_code=request.destination,
             date=request.date,
-            class_code=request.class_code or "3A"
+            class_code=request.class_code or "3A",
         )
-        queries_to_scrape[str(q_direct)] = q_direct
-            
+        queries_to_scrape[str(direct_user_query)] = direct_user_query
+
+        if direct_cand:
+            q = RouteQuery(
+                from_code=direct_cand.from_station,
+                to_code=direct_cand.to_station,
+                date=request.date,
+                class_code=request.class_code or "3A",
+            )
+            queries_to_scrape[str(q)] = q
+
+        # To avoid DDOSing the provider and timing out, only scrape up to 3 candidate segments
+        # from the shortest paths, and rely on DB cache for the rest.
+        count = 0
         for state in candidates:
+            if count >= 3:
+                break
             for path_segment in state.path:
                 seg = path_segment[0]
                 q = RouteQuery(
                     from_code=seg.from_station,
                     to_code=seg.to_station,
                     date=request.date,
-                    class_code=request.class_code or "3A"
+                    class_code=request.class_code or "3A",
                 )
-                queries_to_scrape[str(q)] = q
-                
-        # 3. Live Scrape
+                if str(q) not in queries_to_scrape:
+                    queries_to_scrape[str(q)] = q
+                    count += 1
+                if count >= 3:
+                    break
+
+        # 3. Live Scrape (always at least one query — the direct user request)
         await scrape_and_upsert_live(list(queries_to_scrape.values()))
         
         # 4. Refresh Graph Data (since db was updated, we can just fetch real availability)

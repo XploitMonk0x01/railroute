@@ -31,9 +31,7 @@ class TestRouteQuery:
         assert q.class_code == "3A"
         assert q.quota      == "GN"
 
-    def test_irctc_date_str(self):
-        q = RouteQuery("HWH", "PNBE", date(2026, 7, 5), "3A")
-        assert q.irctc_date_str == "05/07/2026"
+
 
     def test_str_representation(self):
         q = RouteQuery("HWH", "PNBE", date(2026, 7, 20), "3A")

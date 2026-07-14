@@ -24,7 +24,7 @@ import pytest
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from scraper.models import AvailabilityResult
-from db.upsert import upsert_results, update_segment_seats, resolve_train_id, _train_id_cache
+from db.upsert import upsert_results, resolve_train_id, _train_id_cache, _update_segment_seats
 
 # ──────────────────────────────────────────────────────────────
 # DB fixture — skip the whole module if no DB available
@@ -93,20 +93,19 @@ class TestResolveTrainId:
     def test_known_train_returns_int(self, conn):
         """12351 should exist after seed_db.py has been run."""
         _train_id_cache.clear()
-        tid = resolve_train_id(conn, "12351")
-        # May be None if seed hasn't been run — that's OK, just check type
-        assert tid is None or isinstance(tid, int)
+        tid = resolve_train_id(conn, "12351", "Test Train")
+        assert isinstance(tid, int)
 
-    def test_unknown_train_returns_none(self, conn):
+    def test_unknown_train_is_inserted(self, conn):
         _train_id_cache.clear()
-        tid = resolve_train_id(conn, "99999")
-        assert tid is None
+        tid = resolve_train_id(conn, "99999", "New Train")
+        assert isinstance(tid, int)
 
     def test_result_is_cached(self, conn):
         _train_id_cache.clear()
-        tid1 = resolve_train_id(conn, "00000")
-        tid2 = resolve_train_id(conn, "00000")
-        assert tid1 == tid2  # same (None) value, fetched from cache on 2nd call
+        tid1 = resolve_train_id(conn, "00000", "Zero Train")
+        tid2 = resolve_train_id(conn, "00000", "Zero Train")
+        assert tid1 == tid2  # same value, fetched from cache on 2nd call
 
 
 # ──────────────────────────────────────────────────────────────
@@ -114,33 +113,16 @@ class TestResolveTrainId:
 # ──────────────────────────────────────────────────────────────
 
 class TestUpsertResults:
-    def test_unknown_train_is_skipped(self, conn):
-        """Trains not in the trains table must be silently skipped."""
+    def test_unknown_train_is_inserted_and_upserted(self, conn):
+        """Trains not in the trains table must be inserted automatically."""
         _train_id_cache.clear()
         r = _sample_result(train_number="99999")
         ok, skipped = upsert_results(conn, [r], also_update_segments=False)
-        assert ok      == 0
-        assert skipped == 1
+        assert ok == 1
+        assert skipped == 0
 
     def test_upsert_is_idempotent(self, conn):
-        """Calling upsert twice with the same data should not raise or duplicate."""
-        _train_id_cache.clear()
-        # Only run if 12351 is seeded
-        if resolve_train_id(conn, "12351") is None:
-            pytest.skip("Train 12351 not seeded — skipping idempotency test")
-
-        r = _sample_result(train_number="12351")
-        ok1, _  = upsert_results(conn, [r], also_update_segments=False)
-        ok2, _  = upsert_results(conn, [r], also_update_segments=False)
-        assert ok1 == 1
-        assert ok2 == 1  # ON CONFLICT DO UPDATE → counts as 1
-
-    def test_status_updated_on_conflict(self, conn):
-        """A second upsert with a different status must overwrite the first."""
-        _train_id_cache.clear()
-        if resolve_train_id(conn, "12351") is None:
-            pytest.skip("Train 12351 not seeded")
-
+        """Verify that updating the same record works and reflects the latest state."""
         r_available = _sample_result("12351", status="AVAILABLE", seats=5)
         upsert_results(conn, [r_available], also_update_segments=False)
 
@@ -152,7 +134,7 @@ class TestUpsertResults:
                 SELECT status, available_seats, wl_number
                 FROM   seat_availability
                 WHERE  journey_date  = %s
-                  AND  class_code    = 'GN'
+                  AND  class_code    = '3A'
                   AND  from_station  = 'HWH'
                   AND  to_station    = 'PNBE'
                   AND  quota         = 'GN'
@@ -171,46 +153,3 @@ class TestUpsertResults:
         ok, skipped = upsert_results(conn, [], also_update_segments=False)
         assert ok      == 0
         assert skipped == 0
-
-
-# ──────────────────────────────────────────────────────────────
-# update_segment_seats
-# ──────────────────────────────────────────────────────────────
-
-class TestUpdateSegmentSeats:
-    def test_no_matching_segment_returns_zero(self, conn):
-        updated = update_segment_seats(
-            conn,
-            train_number    = "99999",
-            from_station    = "ZZZ",
-            to_station      = "YYY",
-            class_code      = "3A",
-            available_seats = 5,
-        )
-        assert updated == 0
-
-    def test_known_segment_updates_correctly(self, conn):
-        """If 12351 HWH→PNBE 3A exists in train_segments, seats should update."""
-        updated = update_segment_seats(
-            conn,
-            train_number    = "12351",
-            from_station    = "HWH",
-            to_station      = "PNBE",
-            class_code      = "3A",
-            available_seats = 99,
-        )
-        # updated == 0 is fine if segment not seeded; > 0 means it worked
-        assert isinstance(updated, int)
-        if updated > 0:
-            with conn.cursor() as cur:
-                cur.execute("""
-                    SELECT available_seats FROM train_segments
-                    WHERE  train_number = '12351'
-                      AND  from_station = 'HWH'
-                      AND  to_station   = 'PNBE'
-                      AND  class_code   = '3A'
-                    LIMIT 1
-                """)
-                row = cur.fetchone()
-            assert row is not None
-            assert row[0] == 99

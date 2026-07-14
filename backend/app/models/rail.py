@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 from datetime import date, time
+from typing import Any
 
 
 @dataclass(frozen=True)
@@ -10,6 +11,13 @@ class Station:
     state: str
     score: int = 0
     is_junction: bool = False
+    id: int | None = None
+    zone: str | None = None
+    latitude: float | None = None
+    longitude: float | None = None
+    train_count: int = 0
+    created_at: Any | None = None
+    updated_at: Any | None = None
 
 
 @dataclass(frozen=True)
