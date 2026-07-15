@@ -1,0 +1,978 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "RailRoute AI",
+    "version": "0.1.0"
+  },
+  "paths": {
+    "/api/v1/health": {
+      "get": {
+        "tags": [
+          "health"
+        ],
+        "summary": "Health",
+        "operationId": "health_api_v1_health_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/search": {
+      "post": {
+        "tags": [
+          "search"
+        ],
+        "summary": "Search Routes",
+        "operationId": "search_routes_api_v1_search_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SearchRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SearchResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/stations": {
+      "get": {
+        "tags": [
+          "stations"
+        ],
+        "summary": "Search Stations",
+        "operationId": "search_stations_api_v1_stations_get",
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 100,
+              "default": "",
+              "title": "Q"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/StationResponse"
+                  },
+                  "title": "Response Search Stations Api V1 Stations Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/stations/top-junctions": {
+      "get": {
+        "tags": [
+          "stations"
+        ],
+        "summary": "Top Junctions",
+        "operationId": "top_junctions_api_v1_stations_top_junctions_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/StationResponse"
+                  },
+                  "type": "array",
+                  "title": "Response Top Junctions Api V1 Stations Top Junctions Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/register": {
+      "post": {
+        "tags": [
+          "auth"
+        ],
+        "summary": "Register",
+        "operationId": "register_api_v1_auth_register_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegisterRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/login": {
+      "post": {
+        "tags": [
+          "auth"
+        ],
+        "summary": "Login",
+        "operationId": "login_api_v1_auth_login_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/watchlist": {
+      "get": {
+        "tags": [
+          "watchlist"
+        ],
+        "summary": "List Watchlist",
+        "operationId": "list_watchlist_api_v1_watchlist_get",
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "description": "User ID",
+              "title": "User Id"
+            },
+            "description": "User ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/WatchlistEntryResponse"
+                  },
+                  "title": "Response List Watchlist Api V1 Watchlist Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "watchlist"
+        ],
+        "summary": "Create Watchlist",
+        "operationId": "create_watchlist_api_v1_watchlist_post",
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "description": "User ID",
+              "title": "User Id"
+            },
+            "description": "User ID"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WatchlistCreateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WatchlistEntryResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/watchlist/{entry_id}": {
+      "delete": {
+        "tags": [
+          "watchlist"
+        ],
+        "summary": "Delete Watchlist",
+        "operationId": "delete_watchlist_api_v1_watchlist__entry_id__delete",
+        "parameters": [
+          {
+            "name": "entry_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Entry Id"
+            }
+          },
+          {
+            "name": "user_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "description": "User ID",
+              "title": "User Id"
+            },
+            "description": "User ID"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "AuthResponse": {
+        "properties": {
+          "user_id": {
+            "type": "integer",
+            "title": "User Id"
+          },
+          "email": {
+            "type": "string",
+            "title": "Email"
+          },
+          "display_name": {
+            "type": "string",
+            "title": "Display Name"
+          },
+          "token": {
+            "type": "string",
+            "title": "Token"
+          }
+        },
+        "type": "object",
+        "required": [
+          "user_id",
+          "email",
+          "display_name",
+          "token"
+        ],
+        "title": "AuthResponse"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "HealthResponse": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "service": {
+            "type": "string",
+            "title": "Service"
+          },
+          "version": {
+            "type": "string",
+            "title": "Version"
+          }
+        },
+        "type": "object",
+        "required": [
+          "status",
+          "service",
+          "version"
+        ],
+        "title": "HealthResponse"
+      },
+      "LoginRequest": {
+        "properties": {
+          "email": {
+            "type": "string",
+            "title": "Email"
+          },
+          "password": {
+            "type": "string",
+            "title": "Password"
+          }
+        },
+        "type": "object",
+        "required": [
+          "email",
+          "password"
+        ],
+        "title": "LoginRequest"
+      },
+      "RegisterRequest": {
+        "properties": {
+          "email": {
+            "type": "string",
+            "maxLength": 150,
+            "minLength": 3,
+            "title": "Email"
+          },
+          "password": {
+            "type": "string",
+            "maxLength": 72,
+            "minLength": 8,
+            "title": "Password"
+          },
+          "display_name": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Display Name"
+          },
+          "phone": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Phone"
+          }
+        },
+        "type": "object",
+        "required": [
+          "email",
+          "password",
+          "display_name"
+        ],
+        "title": "RegisterRequest"
+      },
+      "RouteResponse": {
+        "properties": {
+          "route_id": {
+            "type": "string",
+            "title": "Route Id"
+          },
+          "score": {
+            "type": "number",
+            "title": "Score"
+          },
+          "total_time_min": {
+            "type": "integer",
+            "title": "Total Time Min"
+          },
+          "total_fare": {
+            "type": "number",
+            "title": "Total Fare"
+          },
+          "transfer_count": {
+            "type": "integer",
+            "title": "Transfer Count"
+          },
+          "wait_min": {
+            "type": "integer",
+            "title": "Wait Min"
+          },
+          "segments": {
+            "items": {
+              "$ref": "#/components/schemas/RouteSegmentResponse"
+            },
+            "type": "array",
+            "title": "Segments"
+          }
+        },
+        "type": "object",
+        "required": [
+          "route_id",
+          "score",
+          "total_time_min",
+          "total_fare",
+          "transfer_count",
+          "wait_min",
+          "segments"
+        ],
+        "title": "RouteResponse"
+      },
+      "RouteSegmentResponse": {
+        "properties": {
+          "train_number": {
+            "type": "string",
+            "title": "Train Number"
+          },
+          "train_name": {
+            "type": "string",
+            "title": "Train Name"
+          },
+          "train_type": {
+            "type": "string",
+            "title": "Train Type",
+            "default": "Superfast"
+          },
+          "from": {
+            "type": "string",
+            "title": "From"
+          },
+          "from_name": {
+            "type": "string",
+            "title": "From Name",
+            "default": ""
+          },
+          "to": {
+            "type": "string",
+            "title": "To"
+          },
+          "to_name": {
+            "type": "string",
+            "title": "To Name",
+            "default": ""
+          },
+          "departure": {
+            "type": "string",
+            "format": "time",
+            "title": "Departure"
+          },
+          "arrival": {
+            "type": "string",
+            "format": "time",
+            "title": "Arrival"
+          },
+          "duration_min": {
+            "type": "integer",
+            "title": "Duration Min"
+          },
+          "distance_km": {
+            "type": "integer",
+            "title": "Distance Km",
+            "default": 0
+          },
+          "wait_min": {
+            "type": "integer",
+            "title": "Wait Min"
+          },
+          "is_transfer": {
+            "type": "boolean",
+            "title": "Is Transfer",
+            "default": false
+          },
+          "day": {
+            "type": "integer",
+            "title": "Day",
+            "default": 1
+          },
+          "class": {
+            "type": "string",
+            "title": "Class"
+          },
+          "fare": {
+            "type": "number",
+            "title": "Fare"
+          },
+          "availability": {
+            "type": "string",
+            "title": "Availability"
+          }
+        },
+        "type": "object",
+        "required": [
+          "train_number",
+          "train_name",
+          "from",
+          "to",
+          "departure",
+          "arrival",
+          "duration_min",
+          "wait_min",
+          "class",
+          "fare",
+          "availability"
+        ],
+        "title": "RouteSegmentResponse"
+      },
+      "SearchConstraints": {
+        "properties": {
+          "max_transfers": {
+            "type": "integer",
+            "maximum": 5.0,
+            "minimum": 0.0,
+            "title": "Max Transfers",
+            "default": 2
+          },
+          "max_wait_min": {
+            "type": "integer",
+            "maximum": 2880.0,
+            "minimum": 0.0,
+            "title": "Max Wait Min",
+            "default": 1440
+          },
+          "max_budget": {
+            "anyOf": [
+              {
+                "type": "number",
+                "exclusiveMinimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Budget"
+          }
+        },
+        "type": "object",
+        "title": "SearchConstraints"
+      },
+      "SearchRequest": {
+        "properties": {
+          "source": {
+            "type": "string",
+            "maxLength": 10,
+            "minLength": 2,
+            "title": "Source"
+          },
+          "destination": {
+            "type": "string",
+            "maxLength": 10,
+            "minLength": 2,
+            "title": "Destination"
+          },
+          "date": {
+            "type": "string",
+            "format": "date",
+            "title": "Date"
+          },
+          "class": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "1A",
+                  "2A",
+                  "3A",
+                  "SL",
+                  "CC",
+                  "EC"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Class"
+          },
+          "filter_preset": {
+            "type": "string",
+            "enum": [
+              "default",
+              "fastest",
+              "cheapest",
+              "least_transfers",
+              "best_availability"
+            ],
+            "title": "Filter Preset",
+            "default": "default"
+          },
+          "constraints": {
+            "$ref": "#/components/schemas/SearchConstraints"
+          }
+        },
+        "type": "object",
+        "required": [
+          "source",
+          "destination",
+          "date"
+        ],
+        "title": "SearchRequest"
+      },
+      "SearchResponse": {
+        "properties": {
+          "direct_available": {
+            "type": "boolean",
+            "title": "Direct Available"
+          },
+          "direct_train": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RouteSegmentResponse"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "alternatives": {
+            "items": {
+              "$ref": "#/components/schemas/RouteResponse"
+            },
+            "type": "array",
+            "title": "Alternatives"
+          },
+          "generated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Generated At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "direct_available",
+          "direct_train",
+          "alternatives",
+          "generated_at"
+        ],
+        "title": "SearchResponse"
+      },
+      "StationResponse": {
+        "properties": {
+          "code": {
+            "type": "string",
+            "title": "Code"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "city": {
+            "type": "string",
+            "title": "City"
+          },
+          "state": {
+            "type": "string",
+            "title": "State"
+          },
+          "score": {
+            "type": "integer",
+            "title": "Score"
+          },
+          "is_junction": {
+            "type": "boolean",
+            "title": "Is Junction"
+          }
+        },
+        "type": "object",
+        "required": [
+          "code",
+          "name",
+          "city",
+          "state",
+          "score",
+          "is_junction"
+        ],
+        "title": "StationResponse"
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "ctx": {
+            "type": "object",
+            "title": "Context"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      },
+      "WatchlistCreateRequest": {
+        "properties": {
+          "source_code": {
+            "type": "string",
+            "maxLength": 10,
+            "minLength": 2,
+            "title": "Source Code"
+          },
+          "destination_code": {
+            "type": "string",
+            "maxLength": 10,
+            "minLength": 2,
+            "title": "Destination Code"
+          },
+          "journey_date": {
+            "type": "string",
+            "format": "date",
+            "title": "Journey Date"
+          },
+          "preferred_class": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Preferred Class"
+          },
+          "max_budget": {
+            "anyOf": [
+              {
+                "type": "number",
+                "exclusiveMinimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Budget"
+          },
+          "notify_on": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Notify On"
+          }
+        },
+        "type": "object",
+        "required": [
+          "source_code",
+          "destination_code",
+          "journey_date"
+        ],
+        "title": "WatchlistCreateRequest"
+      },
+      "WatchlistEntryResponse": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "source_code": {
+            "type": "string",
+            "title": "Source Code"
+          },
+          "destination_code": {
+            "type": "string",
+            "title": "Destination Code"
+          },
+          "journey_date": {
+            "type": "string",
+            "format": "date",
+            "title": "Journey Date"
+          },
+          "preferred_class": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Preferred Class"
+          },
+          "max_budget": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Budget"
+          },
+          "notify_on": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Notify On"
+          },
+          "is_active": {
+            "type": "boolean",
+            "title": "Is Active"
+          },
+          "created_at": {
+            "type": "string",
+            "title": "Created At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "source_code",
+          "destination_code",
+          "journey_date",
+          "preferred_class",
+          "max_budget",
+          "notify_on",
+          "is_active",
+          "created_at"
+        ],
+        "title": "WatchlistEntryResponse"
+      }
+    }
+  }
+}

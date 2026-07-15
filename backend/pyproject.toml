@@ -12,6 +12,7 @@ dependencies = [
     "psycopg[binary]",
     "psycopg-pool",
     "pytest",
+    "pytest-asyncio",
     "uvicorn",
     "playwright",
 ]

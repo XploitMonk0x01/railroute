@@ -193,6 +193,33 @@ class IRCTCClient:
     async def _search_on_new_page(self, query: RouteQuery) -> list[AvailabilityResult]:
         page = await self._context.new_page()
         await _maybe_stealth(page)
+        
+        # Block unnecessary resources for faster scraping and less detection surface
+        async def block_resources(route):
+            if route.request.resource_type in ["image", "media", "font"]:
+                await route.abort()
+            elif any(x in route.request.url for x in ["google-analytics", "facebook.com", "doubleclick", "ads"]):
+                await route.abort()
+            else:
+                await route.continue_()
+        await page.route("**/*", block_resources)
+        
+        # Safe background task to auto-dismiss popups while page is active
+        async def popup_monitor():
+            while not page.is_closed():
+                try:
+                    for sel in ["text=Not now", "button:has-text('Not now')"]:
+                        btn = page.locator(sel).first
+                        if await btn.is_visible(timeout=500):
+                            await btn.click(timeout=1000)
+                            log.info("Dismissed FCF popup automatically.")
+                            await asyncio.sleep(2)  # pause after clicking
+                except Exception:
+                    pass
+                await asyncio.sleep(1)
+
+        monitor_task = asyncio.create_task(popup_monitor())
+
         results: list[AvailabilityResult] = []
 
         try:
@@ -200,9 +227,6 @@ class IRCTCClient:
             log.info("Navigating to: %s", url)
             await page.goto(url, wait_until="domcontentloaded", timeout=NAV_TIMEOUT_MS)
             await asyncio.sleep(_jitter(3))
-
-            # Dismiss "Not now" / FCF popup
-            await self._dismiss_popups(page)
 
             # Wait for train cards to appear (id="train-XXXXX")
             try:
@@ -219,36 +243,23 @@ class IRCTCClient:
                     log.warning("No train cards found for %s", query)
                     return []
 
-            # Extra wait for availability data to populate
-            await asyncio.sleep(_jitter(2))
+            # Wait for availability data to populate via background API calls
+            try:
+                await page.wait_for_load_state("networkidle", timeout=10_000)
+            except Exception:
+                pass  # Ignore timeout, some ads/analytics might still be loading
 
             # Parse the train cards
             results = await self._parse_train_cards(page, query)
             log.info("  %s → %d results parsed", query, len(results))
 
         finally:
+            monitor_task.cancel()
             await page.close()
 
         return results
 
-    # ── popup dismissal ───────────────────────────────────────
 
-    async def _dismiss_popups(self, page: Page) -> None:
-        for _ in range(3):
-            dismissed = False
-            for sel in ["text=Not now", "button:has-text('Not now')", "span:has-text('Not now')"]:
-                try:
-                    btn = page.locator(sel).first
-                    if await btn.is_visible(timeout=2000):
-                        await btn.click()
-                        log.info("Dismissed popup via: %s", sel)
-                        await asyncio.sleep(_jitter(0.8))
-                        dismissed = True
-                        break
-                except Exception:
-                    continue
-            if not dismissed:
-                break
 
     # ── result parsing using exact ConfirmTKT DOM selectors ──
 

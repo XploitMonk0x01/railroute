@@ -93,7 +93,19 @@ function SearchResultsContent() {
               <XCircle className="size-6 text-red-500" />
             </div>
             <h2 className="font-display text-lg font-semibold text-gray-900 mb-1">Search failed</h2>
-            <p className="text-sm text-gray-500 max-w-sm">{store.error}</p>
+            <p className="text-sm text-gray-500 max-w-sm mb-6">{store.error}</p>
+            <button
+              onClick={() => {
+                store.setError(null);
+                store.setLoading(true);
+                searchRoutes({ source: from, destination: to, date, class: travelClass })
+                  .then(results => store.setResults(results))
+                  .catch(err => store.setError(err instanceof Error ? err.message : "An error occurred"));
+              }}
+              className="inline-flex items-center justify-center rounded-lg bg-[--rr-green-600] px-5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-[--rr-green-700] transition-colors"
+            >
+              Try Again
+            </button>
           </div>
         )}
 

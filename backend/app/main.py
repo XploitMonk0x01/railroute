@@ -1,4 +1,10 @@
+"""
+Main FastAPI application module.
+Sets up the application, middleware, routing, and lifecycle events.
+"""
 from contextlib import asynccontextmanager
+from typing import AsyncGenerator
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -10,7 +16,11 @@ from app.repositories.pg_rail_repository import PgRailRepository
 
 
 @asynccontextmanager
-async def lifespan(app: FastAPI):
+async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
+    """
+    Application lifespan manager.
+    Handles startup (DB pool, graph initialization) and shutdown (DB pool close).
+    """
     # Startup: open the database connection pool
     db_pool.open()
     

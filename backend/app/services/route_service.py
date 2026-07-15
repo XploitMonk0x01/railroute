@@ -52,6 +52,12 @@ class RouteState:
 
 
 class RouteService:
+    """
+    Core business service for discovering and ranking train routes.
+    Utilizes an in-memory NetworkX graph to efficiently find direct and multi-hop paths.
+    Integrates with the Playwright scraper to fetch real-time availability on the fly.
+    """
+
     def __init__(self, rail_repository: RailRepository) -> None:
         self._rail_repository = rail_repository
         if rail_graph.G.number_of_edges() == 0:

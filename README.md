@@ -9,6 +9,11 @@ RailRoute AI is a Smart Train Route Planner for Indian Railways. Our intelligent
 - **Live Availability Scraping:** Dynamically fetches real-time seat availability using an integrated Playwright automation engine (via ConfirmTkt).
 - **Modern Tech Stack:** Blazing fast FastAPI backend paired with a beautiful Next.js frontend.
 
+## Documentation
+
+- [Architecture (C4 Model)](docs/architecture/C4_MODEL.md)
+- [OpenAPI Specification](docs/api/openapi.json)
+
 ---
 
 ## Tech Stack
