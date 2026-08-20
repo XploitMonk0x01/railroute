@@ -24,7 +24,7 @@ import asyncio
 import logging
 import random
 import re
-from datetime import date, datetime
+from datetime import date, datetime, timezone
 from typing import Sequence
 
 from playwright.async_api import (
@@ -206,14 +206,26 @@ class IRCTCClient:
         
         # Safe background task to auto-dismiss popups while page is active
         async def popup_monitor():
+            dismiss_selectors = [
+                "text=Not now",
+                "button:has-text('Not now')",
+                "text=Travel Assurance",
+                "button:has-text('No, I don\\'t want')",
+                "text=No, I don't want",
+                "button:has-text('No thanks')",
+                "text=No thanks",
+                "button:has-text('Skip')",
+                "text=Skip",
+                "[aria-label='Close']",
+            ]
             while not page.is_closed():
                 try:
-                    for sel in ["text=Not now", "button:has-text('Not now')"]:
+                    for sel in dismiss_selectors:
                         btn = page.locator(sel).first
-                        if await btn.is_visible(timeout=500):
+                        if await btn.is_visible(timeout=400):
                             await btn.click(timeout=1000)
-                            log.info("Dismissed FCF popup automatically.")
-                            await asyncio.sleep(2)  # pause after clicking
+                            log.info("Dismissed popup (%s) automatically.", sel)
+                            await asyncio.sleep(1)
                 except Exception:
                     pass
                 await asyncio.sleep(1)
@@ -367,7 +379,7 @@ class IRCTCClient:
                         departure       = departure,
                         arrival         = arrival,
                         duration_min    = duration_min,
-                        fetched_at      = datetime.utcnow(),
+                        fetched_at      = datetime.now(timezone.utc),
                         raw_text        = avail_text[:200],
                     )
                 )
@@ -379,37 +391,41 @@ class IRCTCClient:
 
     def _parse_avail_text(self, text: str) -> tuple[str, int, int]:
         """
-        Parse availability from the card text.
-        Examples:
-          "...AVL 93..."  → ("AVAILABLE", 93, 0)
-          "...WL 10..."   → ("WL", 0, 10)
-          "...RAC 63..."  → ("RAC", 63, 0)
-          "...REGRET..."  → ("REGRET", 0, 0)
+        Parse availability status, available seats, and WL number from card text.
+        Handles diverse IRCTC & ConfirmTKT formats:
+          "AVL 93" / "CURR_AVL 12" / "AVAILABLE 5" → ("AVAILABLE", 93, 0)
+          "WL 10" / "GNWL 5" / "RLWL 2" / "PQWL 8" → ("WL", 0, 10)
+          "RAC 63" / "RAC-63"                      → ("RAC", 63, 0)
+          "REGRET" / "NOT AVAILABLE" / "CANCELLED" → ("REGRET", 0, 0)
         """
         upper = text.upper()
 
-        # Check AVL (Available) first
-        m = re.search(r"AVL\s+(\d+)", upper)
-        if m:
-            return ("AVAILABLE", int(m.group(1)), 0)
+        # 1. Available patterns: "AVL 93", "AVL-93", "CURR_AVL 5", "AVAILABLE 10"
+        m_avl = re.search(r"(?:CURR[_\s]*AVL|AVL|AVAILABLE)[^\d\w]*(\d+)", upper)
+        if m_avl:
+            return ("AVAILABLE", int(m_avl.group(1)), 0)
 
-        # Check RAC
-        m = re.search(r"RAC\s+(\d+)", upper)
-        if m:
-            return ("RAC", int(m.group(1)), 0)
+        # 2. RAC patterns: "RAC 63", "RAC-63", "RAC/63"
+        m_rac = re.search(r"RAC[^\d\w]*(\d+)", upper)
+        if m_rac:
+            return ("RAC", int(m_rac.group(1)), 0)
 
-        # Check WL (Waitlist)
-        m = re.search(r"WL\s+(\d+)", upper)
-        if m:
-            return ("WL", 0, int(m.group(1)))
+        # 3. WL patterns: "WL 10", "GNWL 5", "RLWL 2", "PQWL 8", "WL# 10"
+        m_wl = re.search(r"(?:GNWL|RLWL|PQWL|TQWL|WL)[^\d\w]*(\d+)", upper)
+        if m_wl:
+            return ("WL", 0, int(m_wl.group(1)))
 
-        # Check REGRET
-        if "REGRET" in upper:
+        # 4. Explicit REGRET / NOT AVAILABLE / CANCELLED / DEPARTED
+        if any(x in upper for x in ["REGRET", "NOT AVAILABLE", "DEPARTED", "CANCELLED", "CHARTING"]):
             return ("REGRET", 0, 0)
 
-        # Fallback: if "Available" appears but no number
-        if "AVAILABLE" in upper:
-            return ("AVAILABLE", 0, 0)
+        # 5. Generic word "AVAILABLE" without explicit count
+        if "AVAILABLE" in upper or "AVL" in upper:
+            return ("AVAILABLE", 1, 0)
+
+        # 6. Generic word "WAITLIST" or "WL" without explicit count
+        if "WAITLIST" in upper or "WL" in upper:
+            return ("WL", 0, 1)
 
         return ("REGRET", 0, 0)
 

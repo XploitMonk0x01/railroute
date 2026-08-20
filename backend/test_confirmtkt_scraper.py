@@ -1,6 +1,6 @@
 """
 Quick smoke test for the ConfirmTkt scraper.
-Run with: .venv/bin/python test_confirmtkt_scraper.py
+Run with: python test_confirmtkt_scraper.py
 """
 import asyncio
 import sys
@@ -11,7 +11,7 @@ from pathlib import Path
 # Add automation to path
 sys.path.insert(0, str(Path(__file__).parent.parent / "automation"))
 
-from scraper.confirmtkt_client import ConfirmTktClient
+from scraper.irctc_client import IRCTCClient
 from scraper.models import RouteQuery
 
 
@@ -19,13 +19,13 @@ async def main() -> None:
     query = RouteQuery(
         from_code="BRC",
         to_code="NDLS",
-        date=date(2026, 7, 31),
+        date=date(2026, 9, 30),
         class_code="3A",
     )
 
     print(f"Scraping ConfirmTkt for {query} …\n")
 
-    async with ConfirmTktClient(headless=True, max_tabs=1) as client:
+    async with IRCTCClient(headless=True, max_tabs=1) as client:
         results = await client.check_availability(query)
 
     if not results:

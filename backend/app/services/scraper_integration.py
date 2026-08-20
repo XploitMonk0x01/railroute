@@ -101,6 +101,8 @@ async def scrape_and_upsert_live(queries: List[RouteQuery]) -> None:
         results = []
 
     if results:
+        if db_pool.closed:
+            db_pool.open()
         with db_pool.connection() as conn:
             with conn.transaction():
                 upsert_results(conn, results)

@@ -60,15 +60,19 @@ class RouteService:
 
     def __init__(self, rail_repository: RailRepository) -> None:
         self._rail_repository = rail_repository
-        if rail_graph.G.number_of_edges() == 0:
-            rail_graph.build(
-                self._rail_repository.list_stations(),
-                self._rail_repository.list_all_segments(),
-            )
+        rail_graph.build(
+            self._rail_repository.list_stations(),
+            self._rail_repository.list_all_segments(),
+        )
 
     async def search(self, request: SearchRequest) -> SearchResponse:
         if request.source == request.destination:
             raise ValueError("source and destination must be different")
+
+        # Ensure graph is loaded with latest topology from repository
+        stations = self._rail_repository.list_stations()
+        segments = self._rail_repository.list_all_segments()
+        rail_graph.build(stations, segments)
 
         # 1. Find candidate routes IGNORING availability
         candidates = self._find_routes(request, ignore_availability=True)

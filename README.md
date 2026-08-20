@@ -42,7 +42,28 @@ Before setting up the project, ensure you have the following installed:
 
 ## Getting Started
 
-### 1. Clone the Repository
+### ⚡ Quick Start with Docker (Recommended)
+
+Run the automated full-stack setup script to start PostgreSQL, load the database schema, seed static route topology (stations & trains), and launch both the backend and frontend services:
+
+```bash
+./start.sh
+```
+
+Or manually using Docker Compose:
+
+```bash
+docker compose up --build -d
+```
+
+- **Frontend App:** [http://localhost:3000](http://localhost:3000)
+- **Backend API Docs:** [http://localhost:8000/docs](http://localhost:8000/docs)
+
+---
+
+### 🛠️ Manual Local Development Setup
+
+#### 1. Clone the Repository
 
 ```bash
 git clone https://github.com/XploitMonk0x01/railroute.git

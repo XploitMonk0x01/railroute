@@ -2,7 +2,7 @@
 name = "railroute-backend"
 version = "0.1.0"
 description = "RailRoute AI FastAPI backend"
-requires-python = ">=3.11"
+requires-python = ">=3.10"
 dependencies = [
     "fastapi",
     "httpx",
