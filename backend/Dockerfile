@@ -9,11 +9,12 @@ WORKDIR /app
 COPY automation /app/automation
 COPY backend /app/backend
 
-# Upgrade pip, install modules and install matching playwright chromium
+# Upgrade pip, install modules, install matching playwright chromium and ensure entrypoint executable
 RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir -e /app/automation && \
     pip install --no-cache-dir -e /app/backend && \
-    playwright install chromium
+    playwright install chromium && \
+    chmod +x /app/backend/docker-entrypoint.sh
 
 WORKDIR /app/backend
 

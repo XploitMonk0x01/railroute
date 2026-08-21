@@ -1,4 +1,5 @@
 from datetime import time
+from pathlib import Path
 from app.database import db_pool
 from app.repositories.rail_repository import InMemoryRailRepository
 
@@ -23,26 +24,31 @@ def seed():
     db_pool.open()
     with db_pool.connection() as conn:
         with conn.cursor() as cur:
-            # Seed stations
+            # 1. Automatically apply schema if not already present
+            schema_path = Path(__file__).parent / "schema.sql"
+            if schema_path.exists():
+                with open(schema_path, "r", encoding="utf-8") as f:
+                    cur.execute(f.read())
+            
+            # 2. Seed stations
             for st in stations:
                 cur.execute(
-                    "INSERT INTO stations (code, name, city, state, score, is_junction) VALUES (%s, %s, %s, %s, %s, %s) ON CONFLICT DO NOTHING",
+                    "INSERT INTO stations (code, name, city, state, score, is_junction) VALUES (%s, %s, %s, %s, %s, %s) ON CONFLICT (code) DO NOTHING",
                     (st.code, st.name, st.city, st.state, st.score, st.is_junction)
                 )
             
-            # Seed trains
+            # 3. Seed trains
             for t in trains.values():
                 cur.execute(
-                    "INSERT INTO trains (number, name, train_type, run_days) VALUES (%s, %s, %s, %s) ON CONFLICT DO NOTHING",
+                    "INSERT INTO trains (number, name, train_type, run_days) VALUES (%s, %s, %s, %s) ON CONFLICT (number) DO NOTHING",
                     (t["number"], t["name"], t["train_type"], t["run_days"])
                 )
             
-            # Seed segments
+            # 4. Seed segments
             for seg in segments:
-                # Check if segment already exists
                 cur.execute(
-                    "SELECT 1 FROM train_segments WHERE train_number = %s AND from_station = %s AND to_station = %s",
-                    (seg.train_number, seg.from_station, seg.to_station)
+                    "SELECT 1 FROM train_segments WHERE train_number = %s AND from_station = %s AND to_station = %s AND class_code = %s",
+                    (seg.train_number, seg.from_station, seg.to_station, seg.class_code)
                 )
                 if not cur.fetchone():
                     cur.execute(

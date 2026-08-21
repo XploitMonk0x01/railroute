@@ -10,7 +10,7 @@ class Settings(BaseSettings):
     default_max_transfers: int = Field(default=2, ge=0, le=5)
     default_max_wait_min: int = Field(default=1440, ge=0)
     transfer_penalty_min: int = Field(default=60, ge=0)
-    database_url: str = "postgresql://master@127.0.0.1:5432/railroute"
+    database_url: str = "postgresql://master:railroute_pass@127.0.0.1:5432/railroute"
 
     model_config = SettingsConfigDict(env_prefix="RAILROUTE_", env_file=".env", env_file_encoding="utf-8", extra="ignore")
 
