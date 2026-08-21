@@ -112,6 +112,19 @@ export const useSearchStore = create<SearchState>((set, get) => ({
 
     let routes = [...results.alternatives];
 
+    if (results.direct_train) {
+      const directRoute: RouteResult = {
+        route_id: `direct_${results.direct_train.train_number}`,
+        score: results.direct_available ? 0.05 : 0.90,
+        total_time_min: results.direct_train.duration_min,
+        total_fare: results.direct_train.fare,
+        transfer_count: 0,
+        total_wait_min: 0,
+        segments: [results.direct_train],
+      };
+      routes.unshift(directRoute);
+    }
+
     if (maxBudget !== null) {
       routes = routes.filter((r) => r.total_fare <= maxBudget);
     }

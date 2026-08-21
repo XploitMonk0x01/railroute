@@ -80,7 +80,9 @@ export function RouteCard({ route, rank }: RouteCardProps) {
             <div className="flex items-center gap-1.5 text-sm text-gray-600 hidden sm:flex">
               <ArrowLeftRight className="size-3.5 text-gray-400" />
               <span className="font-medium text-gray-700">
-                {route.transfer_count} {route.transfer_count === 1 ? "transfer" : "transfers"}
+                {route.transfer_count === 0
+                  ? "Direct"
+                  : `${route.transfer_count} ${route.transfer_count === 1 ? "transfer" : "transfers"}`}
               </span>
             </div>
             {route.total_wait_min > 0 && (
